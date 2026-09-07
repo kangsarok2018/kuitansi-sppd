@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surat Bukti Pengeluaran & Rincian Perjalanan Dinas - Kabupaten Merangin</title>
+  <!-- Tailwind CSS untuk tata kelola antarmuka editor -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Lembar Kuitansi & Rincian Standar SPJ */
+    .sheet-kuitansi {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #000000;
+      background-color: #ffffff;
+      width: 215mm;
+      min-width: 215mm;
+      margin: 0 auto;
+      box-sizing: border-box;
+      padding: 16px; /* Ruang aman agar bingkai solid tidak terpotong */
+    }
+
+    /* Garis tabel kuitansi presisi solid dan bersambung */
+    .kuitansi-border {
+      border: 2px solid #000000 !important;
+      border-collapse: collapse;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    .kuitansi-border td, .kuitansi-border th {
+      border: 1px solid #000000;
+      vertical-align: top;
+      padding: 5px 8px;
+      box-sizing: border-box;
+    }
+
+    .inner-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .inner-table td {
+      border: none !important;
+      padding: 1.5px 2px !important;
+      font-size: 10pt;
+      line-height: 1.35;
+    }
+
+    /* Format Teks Kop Satu Baris */
+    .text-kop-1 {
+      font-size: 11.5pt;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+
+    .text-kop-2 {
+      font-size: 11.5pt;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      line-height: 1.25;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    /* Tabel Rincian Biaya SPPD */
+    .table-rincian-sppd {
+      border: 2px solid #000000 !important;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .table-rincian-sppd th {
+      border: 1.5px solid #000000;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 9.5pt;
+      font-weight: bold;
+      background-color: #ffffff;
+    }
+
+    .table-rincian-sppd td {
+      border: 1px solid #000000;
+      font-size: 9.5pt;
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+
+    /* Garis pemisah halaman saat print */
+    .page-break-print {
+      page-break-after: always !important;
+      break-after: page !important;
+    }
+
+    /* Mode Cetak Resmi */
+    @media print {
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        display: block !important;
+      }
+      .sheet-kuitansi {
+        width: 100% !important;
+        min-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+      @page {
+        size: legal portrait;
+        margin: 1cm 0.8cm 0.8cm 0.8cm;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header Navigasi -->
+  <header class="no-print bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-3">
+        <!-- Logo Resmi Kabupaten Merangin pada Header -->
+        <div class="w-10 h-10 rounded-lg bg-slate-800 p-1 flex items-center justify-center border border-slate-700 shadow-sm overflow-hidden flex-shrink-0">
+          <img 
+            id="header_logoImg"
+            src="https://lh3.googleusercontent.com/d/1_7FZisvkbSmNCadKTjaRVrFQpgPoIgNF" 
+            alt="Lambang Kabupaten Merangin"
+            class="w-full h-full object-contain"
+            onerror="tanganiErrorLogo(this)"
+          >
+        </div>
+        <div>
+          <h1 class="font-bold text-base leading-tight">Generator SPJ Belanja & SPPD</h1>
+          <p class="text-xs text-slate-400">Pemerintah Kabupaten Merangin</p>
+        </div>
+      </div>
+
+      <!-- Pemilih Dokumen / Tab Preview (Tab 1: SPPD, Tab 2: Kuitansi) -->
+      <div class="flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+        <button type="button" onclick="gantiTampilanDokumen('sppd')" id="tabBtn_sppd" class="px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white shadow">
+          1. Rincian Biaya SPPD
+        </button>
+        <button type="button" onclick="gantiTampilanDokumen('kuitansi')" id="tabBtn_kuitansi" class="px-3 py-1.5 rounded font-medium transition text-slate-300 hover:text-white">
+          2. Kuitansi Belanja
+        </button>
+        <button type="button" onclick="gantiTampilanDokumen('keduanya')" id="tabBtn_keduanya" class="px-3 py-1.5 rounded font-medium transition text-slate-300 hover:text-white">
+          Lihat Keduanya
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="muatDataDefaultSemua()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition">
+          Reset Data
+        </button>
+        <button type="button" onclick="window.print()" class="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md shadow flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          Cetak / PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Kontainer Utama -->
+  <main class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 w-full">
+
+    <!-- ==================== PANEL FORMULIR (KIRI) ==================== -->
+    <section class="no-print lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col max-h-[88vh]">
+      
+      <!-- Sub-Tab Form Switcher (Tab 1: Form SPPD, Tab 2: Form Kuitansi) -->
+      <div class="p-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="flex gap-2">
+          <button type="button" onclick="gantiFormTab('formSppd')" id="fTabBtn_sppd" class="px-2.5 py-1 text-xs font-bold rounded bg-blue-600 text-white transition">
+            1. Form Rincian SPPD
+          </button>
+          <button type="button" onclick="gantiFormTab('formKuitansi')" id="fTabBtn_kuitansi" class="px-2.5 py-1 text-xs font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+            2. Form Kuitansi
+          </button>
+        </div>
+        <span class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-200">Live Sync</span>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 text-xs flex-1">
+        
+        <!-- ================= FORM 1: RINCIAN BIAYA SPPD ================= -->
+        <div id="wrapperFormSppd" class="space-y-4">
+          <!-- Identitas SPPD -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">A. Identitas Lampiran SPPD</span>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Lampiran SPPD Nomor</label>
+              <input type="text" id="fs_noSppd" value="094/000/ST/P3/BPPRD/2026" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Tanggal SPPD</label>
+              <input type="text" id="fs_tglSppd" value="01 Juni 2026" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Tujuan Perjalanan</label>
+              <input type="text" id="fs_tujuanSppd" value="Kecamatan Bangko" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+            </div>
+          </div>
+
+          <!-- Daftar Pelaksana Perjalanan Dinas -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">B. Pelaksana Perjalanan Dinas</span>
+              <button type="button" onclick="tambahOrangSppd()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium text-[11px] flex items-center gap-1 shadow-sm">
+                + Tambah Orang
+              </button>
+            </div>
+            <div id="listOrangSppdContainer" class="space-y-3">
+              <!-- Item list orang dinamis di sini (Default 2 orang) -->
+            </div>
+          </div>
+
+          <!-- Kolom BBM (Setelah Pelaksana Perjalanan Dinas) -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">C. Biaya Bahan Bakar Minyak (BBM)</span>
+              <span class="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">Opsional</span>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              Kosongkan atau isi nilai <span class="font-semibold text-slate-700">0</span> jika perjalanan dinas tidak mengklaim biaya BBM. Baris ini otomatis <span class="text-rose-600 font-semibold">tidak akan muncul</span> pada hasil cetak.
+            </p>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Jumlah Biaya BBM (Rp)</label>
+              <input type="number" id="fs_bbmNominal" placeholder="0 (Kosongkan jika tidak ada)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs font-semibold text-blue-900 focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Keterangan / Uraian BBM</label>
+              <input type="text" id="fs_bbmUraian" value="Biaya Bahan Bakar Minyak (BBM)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5">Nama Penerima / Driver (Opsional)</label>
+              <input type="text" id="fs_bbmPenerima" placeholder="a.n Pengemudi / Pelaksana" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+            </div>
+          </div>
+
+          <!-- Tombol Sinkronisasi Total SPPD ke Kuitansi -->
+          <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            <div>
+              <span class="font-bold text-blue-900 block text-xs">Sinkronisasi ke Kuitansi</span>
+              <span class="text-[10px] text-blue-700">Salin total hitungan SPPD ke nominal kuitansi belanja</span>
+            </div>
+            <button type="button" onclick="salinTotalKeKuitansi()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium text-xs shadow-sm transition">
+              Terapkan
+            </button>
+          </div>
+
+          <!-- Penandatangan SPPD -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">D. Penandatangan SPPD</span>
+            <div class="flex items-center gap-2 mb-1">
+              <input type="checkbox" id="fs_syncTtd" checked onchange="toggleSyncTtd()" class="rounded text-blue-600">
+              <label for="fs_syncTtd" class="text-xs text-slate-700 font-medium cursor-pointer">Samakan Pengguna Anggaran & Bendahara dengan Kuitansi</label>
+            </div>
+            <div id="customTtdSppdBox" class="space-y-2 hidden">
+              <div class="p-2 border border-slate-200 bg-white rounded space-y-1">
+                <span class="font-semibold text-slate-700 block">Pengguna Anggaran</span>
+                <input type="text" id="fs_kadisNama" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="Nama">
+                <input type="text" id="fs_kadisNip" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="NIP">
+              </div>
+              <div class="p-2 border border-slate-200 bg-white rounded space-y-1">
+                <span class="font-semibold text-slate-700 block">Bendahara Pengeluaran</span>
+                <input type="text" id="fs_bendaharaNama" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="Nama">
+                <input type="text" id="fs_bendaharaNip" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="NIP">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[10px] text-slate-500">Kota</label>
+                <input type="text" id="fs_lokasiTtd" value="Bangko" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500">Tahun</label>
+                <input type="text" id="fs_tahunTtd" value="2026" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+
+            <!-- Footer Statis (Bukan Kolom Inputan - Tidak Tercetak di PDF) -->
+            
+          </div>
+        </div>
+
+        <!-- ================= FORM 2: KUITANSI BELANJA ================= -->
+        <div id="wrapperFormKuitansi" class="space-y-4 hidden">
+          <!-- 1. Nomor, Tanggal & Logo -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">1. Identitas & Logo Dokumen</span>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Tautan Logo (Google Drive / Direct URL)</label>
+              <input type="text" id="f_logoUrl" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="https://...">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Nomor Bukti</label>
+              <input type="text" id="f_nomor" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Tanggal Dokumen</label>
+              <input type="text" id="f_tanggal" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <!-- Kontrol Pengatur Lebar Spasi Manual -->
+            <div class="pt-1">
+              <label class="block font-medium text-slate-600 mb-1 flex justify-between items-center">
+                <span>Jarak Kosong Setelah Titik Dua (Isian Manual)</span>
+                <span id="label_spasi" class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">38 px</span>
+              </label>
+              <input type="range" id="f_spasiManual" min="10" max="90" value="38" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+          </div>
+
+          <!-- 2. Urusan & Organisasi -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">2. Organisasi / SKPD</span>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kode Urusan</label>
+                <input type="text" id="f_urusanKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-2">
+                <label class="block font-medium text-slate-600 mb-1">Nama Urusan Pemerintahan</label>
+                <input type="text" id="f_urusanNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kode Unit</label>
+                <input type="text" id="f_unitKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-2">
+                <label class="block font-medium text-slate-600 mb-1">Nama Unit Organisasi</label>
+                <input type="text" id="f_unitNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kode Sub Unit</label>
+                <input type="text" id="f_subUnitKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-2">
+                <label class="block font-medium text-slate-600 mb-1">Nama Sub Unit Organisasi</label>
+                <input type="text" id="f_subUnitNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Nominal & Terbilang -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">3. Nominal & Pembayaran</span>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Jumlah Pembayaran (Rp)</label>
+              <input type="number" id="f_nominal" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs font-semibold text-blue-900 focus:ring-1 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Terbilang (Otomatis)</label>
+              <textarea id="f_terbilang" rows="2" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs italic bg-white"></textarea>
+            </div>
+          </div>
+
+          <!-- 4. Rincian Belanja -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">4. Rincian Belanja</span>
+            <div class="grid grid-cols-4 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kd Program</label>
+                <input type="text" id="f_progKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-3">
+                <label class="block font-medium text-slate-600 mb-1">Nama Program</label>
+                <input type="text" id="f_progNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kd Kegiatan</label>
+                <input type="text" id="f_kegKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-3">
+                <label class="block font-medium text-slate-600 mb-1">Nama Kegiatan</label>
+                <input type="text" id="f_kegNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Kd Sub Kegiatan</label>
+                <input type="text" id="f_subKegKode" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div class="col-span-3">
+                <label class="block font-medium text-slate-600 mb-1">Nama Sub Kegiatan</label>
+                <input type="text" id="f_subKegNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Kode Rekening Belanja</label>
+              <input type="text" id="f_rekening" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs">
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Untuk Keperluan</label>
+              <textarea id="f_keperluan" rows="3" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs"></textarea>
+            </div>
+          </div>
+
+          <!-- 5. Penerima & Potongan Pajak -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">5. Penerima & Potongan Pajak</span>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Nama Penerima</label>
+                <input type="text" id="f_penerimaNama" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+              <div>
+                <label class="block font-medium text-slate-600 mb-1">Alamat Penerima</label>
+                <input type="text" id="f_penerimaAlamat" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs">
+              </div>
+            </div>
+            <div>
+              <label class="block font-medium text-slate-600 mb-1">Informasi Potongan Pajak (Opsional)</label>
+              <textarea id="f_infoPajak" rows="2" placeholder="Kosongkan jika tidak ada pemotongan pajak" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs"></textarea>
+            </div>
+          </div>
+
+          <!-- 6. Penandatangan Kuitansi -->
+          <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">6. Pejabat Penandatangan</span>
+            <div class="p-2 border border-slate-200 bg-white rounded space-y-1.5">
+              <span class="font-semibold text-slate-700 block">PPTK</span>
+              <input type="text" id="f_pptkNama" placeholder="Nama PPTK" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              <input type="text" id="f_pptkNip" placeholder="NIP PPTK" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+            </div>
+            <div class="p-2 border border-slate-200 bg-white rounded space-y-1.5">
+              <span class="font-semibold text-slate-700 block">Bendahara Pengeluaran</span>
+              <input type="text" id="f_bendaharaNama" placeholder="Nama Bendahara" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              <input type="text" id="f_bendaharaNip" placeholder="NIP Bendahara" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+            </div>
+            <div class="p-2 border border-slate-200 bg-white rounded space-y-1.5">
+              <div class="grid grid-cols-2 gap-2 mb-1">
+                <div>
+                  <label class="block text-[10px] text-slate-500">Kota Dokumen</label>
+                  <input type="text" id="f_lokasiTtd" value="Bangko" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500">Tahun</label>
+                  <input type="text" id="f_tahunTtd" value="2026" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+                </div>
+              </div>
+              <input type="text" id="f_kadisJabatan" placeholder="Jabatan Kepala SKPD" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              <input type="text" id="f_kadisNama" placeholder="Nama Kepala & Gelar" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+              <input type="text" id="f_kadisNip" placeholder="NIP Kepala" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+            </div>
+
+            
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Panel Form (Statis / Tidak Tercetak ke PDF) -->
+      <div class="no-print p-2.5 bg-slate-50 border-t border-slate-200 text-center text-xs text-slate-500 flex justify-between items-center px-4">
+        <span>Dibuat oleh : <strong class="text-slate-700 font-semibold">MUHAMMAD FUAD</strong></span>
+        
+      </div>
+    </section>
+
+    <!-- ==================== PRATINJAU DOKUMEN CETAK (KANAN) ==================== -->
+    <section class="lg:col-span-7 flex flex-col items-center">
+      <div class="no-print w-full flex justify-between items-center mb-2 px-1">
+        <span class="text-xs font-semibold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+          <span id="labelModePratinjau">Pratinjau: 1. Rincian Biaya SPPD</span>
+        </span>
+        <div class="flex items-center gap-2 text-xs text-slate-600">
+                   <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Format Pas Standar SPJ
+        </div>
+      </div>
+
+      <!-- Area Tampilan Lembaran Dokumen -->
+      <div class="print-container w-full overflow-x-auto p-4 md:p-6 bg-slate-300/60 rounded-xl shadow-inner flex flex-col items-center gap-8">
+        
+        <!-- ================= HALAMAN 1: RINCIAN BIAYA SPPD ================= -->
+        <div id="pagePreviewSppd" class="sheet-kuitansi bg-white shadow-xl">
+          <!-- Judul Rincian -->
+          <div style="text-align: center; font-weight: bold; font-size: 11pt; margin-bottom: 12px; letter-spacing: 0.5px;">
+            RINCIAN BIAYA PERJALANAN DINAS
+          </div>
+
+          <!-- Informasi SPPD -->
+          <table style="width: 100%; margin-bottom: 8px; border-collapse: collapse; font-size: 9.5pt;">
+            <tr>
+              <td style="width: 180px; font-weight: bold;">LAMPIRAN SPPD NOMOR</td>
+              <td style="width: 14px; font-weight: bold;">:</td>
+              <td id="vs_noSppd">094/000/ST/P3/BPPRD/2026</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold;">TANGGAL</td>
+              <td style="font-weight: bold;">:</td>
+              <td id="vs_tglSppd">01 Juni 2026</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold;">TUJUAN</td>
+              <td style="font-weight: bold;">:</td>
+              <td id="vs_tujuanSppd">Kecamatan Bangko</td>
+            </tr>
+          </table>
+
+          <!-- Tabel Utama Rincian Biaya -->
+          <table class="table-rincian-sppd">
+            <thead>
+              <tr>
+                <th style="width: 35px;">NO</th>
+                <th>PERINCIAN BIAYA</th>
+                <th style="width: 185px;">JUMLAH DITERIMA</th>
+                <th style="width: 200px;">TANDA TANGAN</th>
+              </tr>
+            </thead>
+            <tbody id="vs_tableBody">
+              <!-- Baris dinamis orang & BBM di sini -->
+            </tbody>
+            <tfoot>
+              <tr style="font-weight: bold; font-size: 9.5pt;">
+                <td colspan="2" style="border: 1.5px solid #000; padding: 5px 8px; font-weight: bold;">TOTAL</td>
+                <td style="border: 1.5px solid #000; padding: 5px 8px;">
+                  <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                    <span>Rp</span>
+                    <span id="vs_totalBiaya">300.000</span>
+                  </div>
+                </td>
+                <td style="border: 1.5px solid #000;"></td>
+              </tr>
+              <tr style="font-size: 9.5pt;">
+                <td colspan="4" style="border: 1.5px solid #000; padding: 6px 8px;">
+                  <div style="display: flex; gap: 15px; align-items: baseline;">
+                    <span style="font-weight: bold; white-space: nowrap;">Terbilang (Pembulatan) :</span>
+                    <span style="font-style: italic; font-weight: bold;" id="vs_totalTerbilang">Tiga Ratus Ribu Rupiah</span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Penandatangan SPPD -->
+          <div style="margin-top: 14px; width: 100%;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 9.5pt;">
+              <tr>
+                <td style="width: 50%;"></td>
+                <td style="width: 50%;">
+                  <span id="vs_lokasiTtd">Bangko</span>, ............................................ <span id="vs_tahunTtd">2026</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-top: 6px;">
+                  Mengetahui,<br>
+                  Pengguna Anggaran
+                </td>
+                <td style="padding-top: 6px;">
+                  Yang Membayar,<br>
+                  Bendahara Pengeluaran
+                </td>
+              </tr>
+              <tr>
+                <!-- Ruang tanda tangan basah -->
+                <td style="height: 60px;"></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="text-decoration: underline; font-weight: bold; font-size: 10pt;" id="vs_kadisNama">Hj. SITI AMINAH, MM</div>
+                  <div style="font-size: 9pt;" id="vs_kadisNip">NIP. 19690805 20012 2 002</div>
+                </td>
+                <td>
+                  <div style="text-decoration: underline; font-weight: bold; font-size: 10pt;" id="vs_bendaharaNama">NURASIAH, A.Md</div>
+                  <div style="font-size: 9pt;" id="vs_bendaharaNip">NIP. 19750505 199903 2 007</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- ================= HALAMAN 2: KUITANSI BELANJA ================= -->
+        <div id="pagePreviewKuitansi" class="sheet-kuitansi bg-white shadow-xl hidden">
+          <table class="kuitansi-border">
+            <!-- BARIS 1: KOP HEADER & LOGO -->
+            <tr>
+              <td style="width: 65px; min-width: 65px; max-width: 65px; text-align: center; vertical-align: middle; padding: 3px 2px;" rowspan="2">
+                <img 
+                  id="v_logoImg" 
+                  src="https://lh3.googleusercontent.com/d/1_7FZisvkbSmNCadKTjaRVrFQpgPoIgNF" 
+                  alt="Lambang Kabupaten Merangin"
+                  style="max-width: 54px; max-height: 84px; width: auto; height: auto; margin: 0 auto; display: block; object-fit: contain;"
+                  onerror="tanganiErrorLogo(this)"
+                >
+              </td>
+              <td style="text-align: center; padding: 7px 8px; vertical-align: middle;">
+                <div class="text-kop-1">PEMERINTAH KABUPATEN MERANGIN</div>
+                <div class="text-kop-2">SURAT BUKTI PENGELUARAN / BELANJA</div>
+              </td>
+            </tr>
+
+            <!-- BARIS 1b: NOMOR & TANGGAL -->
+            <tr>
+              <td style="padding: 4px 8px; vertical-align: middle;">
+                <table class="inner-table">
+                  <tr style="white-space: nowrap;">
+                    <td style="width: 80px; font-weight: bold; font-size: 10.5pt; white-space: nowrap;">Nomor</td>
+                    <td style="width: 14px; font-weight: bold; font-size: 10.5pt; white-space: nowrap;">:</td>
+                    <td style="font-weight: bold; font-size: 10.5pt; letter-spacing: 0.2px; white-space: nowrap; padding-left: 38px !important;" id="v_nomor">/TBP-GU-II/4.4.2.1/BPPRD/2026</td>
+                  </tr>
+                  <tr style="white-space: nowrap;">
+                    <td style="font-weight: bold; font-size: 10.5pt; white-space: nowrap;">Tanggal</td>
+                    <td style="font-weight: bold; font-size: 10.5pt; white-space: nowrap;">:</td>
+                    <td style="font-size: 10.5pt; font-weight: normal; white-space: nowrap; padding-left: 38px !important;" id="v_tanggal">Juni 2026</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- BARIS 2: URUSAN PEMERINTAHAN & SKPD -->
+            <tr>
+              <td colspan="2" style="padding: 5px 8px;">
+                <table class="inner-table">
+                  <tr style="white-space: nowrap;">
+                    <td style="width: 175px; font-weight: bold; font-size: 10pt; white-space: nowrap;">Urusan Pemerintahan</td>
+                    <td style="width: 14px; font-weight: bold; font-size: 10pt; white-space: nowrap;">:</td>
+                    <td style="width: 135px; font-size: 10pt; white-space: nowrap;" id="v_urusanKode">5.02</td>
+                    <td style="font-size: 10pt; text-transform: uppercase; white-space: nowrap;" id="v_urusanNama">URUSAN PENUNJANG URUSAN PEMERINTAH KEUANGAN</td>
+                  </tr>
+                  <tr style="white-space: nowrap;">
+                    <td style="font-weight: bold; font-size: 10pt; white-space: nowrap;">Unit Organisasi</td>
+                    <td style="font-weight: bold; font-size: 10pt; white-space: nowrap;">:</td>
+                    <td style="font-size: 10pt; white-space: nowrap;" id="v_unitKode">5-02.0.00.0.00.04</td>
+                    <td style="font-size: 10pt; text-transform: uppercase; white-space: nowrap;" id="v_unitNama">BADAN PENGELOLA PAJAK DAN RETRIBUSI DAERAH</td>
+                  </tr>
+                  <tr style="white-space: nowrap;">
+                    <td style="font-weight: bold; font-size: 10pt; white-space: nowrap;">Sub Unit Organisasi</td>
+                    <td style="font-weight: bold; font-size: 10pt; white-space: nowrap;">:</td>
+                    <td style="font-size: 10pt; white-space: nowrap;" id="v_subUnitKode">5-02.0.00.0.00.04.01</td>
+                    <td style="font-size: 10pt; text-transform: uppercase; white-space: nowrap;" id="v_subUnitNama">BADAN PENGELOLA PAJAK DAN RETRIBUSI DAERAH</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- BARIS 3: UANG & TERBILANG -->
+            <tr>
+              <td colspan="2" style="padding: 7px 8px;">
+                <table class="inner-table">
+                  <tr>
+                    <td style="width: 65%; font-size: 10pt;">Sudah diterima dari Bendahara Pengeluaran, uang sejumlah</td>
+                    <td style="font-size: 12pt; font-weight: bold; text-align: right; padding-right: 25px !important;">
+                      Rp &nbsp;&nbsp; <span id="v_nominal">525.000</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 4px !important;">
+                      <div style="display: flex; gap: 20px; align-items: baseline;">
+                        <span style="font-size: 10pt;">Terbilang</span>
+                        <span style="font-style: italic; font-weight: bold; font-size: 10.5pt;" id="v_terbilang">Lima Ratus Dua Puluh Lima Ribu Rupiah</span>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- BARIS 4: RINCIAN BELANJA -->
+            <tr>
+              <td colspan="2" style="padding: 6px 8px;">
+                <div style="font-weight: bold; font-size: 10pt; margin-bottom: 3px;">Yaitu untuk pembayaran :</div>
+                <table class="inner-table">
+                  <tr>
+                    <td style="width: 130px; vertical-align: top; font-size: 9.5pt;">Program</td>
+                    <td style="width: 14px; vertical-align: top; font-size: 9.5pt;">:</td>
+                    <td style="width: 40px; vertical-align: top; font-size: 9.5pt;" id="v_progKode">04</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;" id="v_progNama">Program Pengelola Pendapatan Daerah</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align: top; font-size: 9.5pt;">Kegiatan</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;">:</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;" id="v_kegKode">2.01</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;" id="v_kegNama">Kegiatan Pengelola Pendapatan Daerah</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align: top; font-size: 9.5pt;">Sub Kegiatan</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;">:</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;" id="v_subKegKode">05</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;" id="v_subKegNama">Pendataan dan Pendaftaran Objek Pajak Daerah</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align: top; font-size: 9.5pt;">Kode Rekening</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;">:</td>
+                    <td colspan="2" style="vertical-align: top; font-size: 9.5pt;" id="v_rekening">5.1.2.04.01.0003 Belanja Perjalanan Dinas Dalam Kota</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align: top; font-size: 9.5pt;">Untuk Keperluan</td>
+                    <td style="vertical-align: top; font-size: 9.5pt;">:</td>
+                    <td colspan="2" style="vertical-align: top; text-align: justify; font-size: 9.5pt;" id="v_keperluan">
+                      Pembayaran Biaya Perjalanan Dinas Dalam Kota An. Alamsyah/ Muhammad Fuad, S.Si/ Erik Anggriawan, S.Pd ke Kec. Pamenang Tanggal 08 Agustus 2025 SPPD Terlampir
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- BARIS 5: PENERIMA & POTONGAN PAJAK -->
+            <tr>
+              <td style="width: 50%; padding: 6px 8px;">
+                <div style="font-weight: bold; font-size: 9.5pt; margin-bottom: 4px;">Yang berhak menerima pembayaran :</div>
+                <table class="inner-table">
+                  <tr>
+                    <td style="width: 65px; font-size: 9.5pt;">Nama</td>
+                    <td style="width: 12px; font-size: 9.5pt;">:</td>
+                    <td style="font-size: 9.5pt;" id="v_penerimaNama">Erik Anggriawan, S.Pd</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size: 9.5pt;">Alamat</td>
+                    <td style="font-size: 9.5pt;">:</td>
+                    <td style="font-size: 9.5pt;" id="v_penerimaAlamat">Bangko</td>
+                  </tr>
+                </table>
+              </td>
+              <td style="width: 50%; padding: 6px 8px;">
+                <div style="font-weight: bold; font-size: 9.5pt; margin-bottom: 4px;">Informasi Potongan Pajak</div>
+                <div id="v_infoPajak" style="font-size: 9pt; min-height: 38px; color: #333;"></div>
+              </td>
+            </tr>
+
+            <!-- BARIS 6: TANDA TANGAN 3 PIHAK (SEJAJAR SEMPURNA) -->
+            <tr>
+              <td colspan="2" style="padding: 8px 8px;">
+                <table class="inner-table" style="text-align: center;">
+                  <!-- Baris Tanggal/Kota: Hanya ada di kolom kanan atas -->
+                  <tr>
+                    <td style="width: 35%; font-size: 9.5pt;"></td>
+                    <td style="width: 30%; font-size: 9.5pt;"></td>
+                    <td style="width: 35%; font-size: 9.5pt;">
+                      <span id="v_lokasiTtd">Bangko</span>, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="v_tahunTtd">2026</span>
+                    </td>
+                  </tr>
+                  <!-- Baris Nama Jabatan: Ketiganya Sejajar Horizontal -->
+                  <tr>
+                    <td style="width: 35%; font-size: 9.5pt; vertical-align: top;">Pejabat Pelaksana Teknis Kegiatan,</td>
+                    <td style="width: 30%; font-size: 9.5pt; vertical-align: top;">Bendahara Pengeluaran</td>
+                    <td style="width: 35%; font-size: 9.5pt; vertical-align: top;">
+                      <span id="v_kadisJabatan">Kepala Badan Pengelola Pajak dan Retribusi Daerah</span>
+                    </td>
+                  </tr>
+                  <!-- Ruang tanda tangan basah & cap stempel -->
+                  <tr>
+                    <td style="height: 60px;"></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <!-- Baris Nama Pejabat & NIP -->
+                  <tr>
+                    <td>
+                      <div style="text-decoration: underline; font-weight: bold; font-size: 10pt;" id="v_pptkNama">SYORAYA, S.Pd</div>
+                      <div style="font-size: 9pt;" id="v_pptkNip">NIP. 19740124 199604 2 001</div>
+                    </td>
+                    <td>
+                      <div style="text-decoration: underline; font-weight: bold; font-size: 10pt;" id="v_bendaharaNama">NURASIAH, A.Md</div>
+                      <div style="font-size: 9pt;" id="v_bendaharaNip">NIP. 19750505 199903 2 007</div>
+                    </td>
+                    <td>
+                      <div style="text-decoration: underline; font-weight: bold; font-size: 10pt;" id="v_kadisNama">HJ. SITI AMINAH, MM</div>
+                      <div style="font-size: 9pt;" id="v_kadisNip">NIP. 19690805 20012 2 002</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer Aplikasi (No-Print) -->
+  <footer class="no-print mt-auto py-3 bg-white border-t border-slate-200 text-center text-xs text-slate-500">
+    <p>Dibuat oleh : <span class="font-semibold text-slate-700">MUHAMMAD FUAD</span> &bull; Pemerintah Kabupaten Merangin</p>
+  </footer>
+
+  <script>
+    // File ID Google Drive dari tautan pengguna
+    const GDRIVE_FILE_ID = "1_7FZisvkbSmNCadKTjaRVrFQpgPoIgNF";
+    const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/" + GDRIVE_FILE_ID;
+
+    // DATA STATE GLOBAL (Default Tab 1: SPPD)
+    let modeTampilanDokumen = 'sppd'; // 'sppd' | 'kuitansi' | 'keduanya'
+
+    // Data Awal Kuitansi
+    const defaultKuitansi = {
+      logoUrl: DEFAULT_LOGO_URL,
+      nomor: "/TBP-GU-II/4.4.2.1/BPPRD/2026",
+      tanggal: "Juni 2026",
+      spasiManual: 38,
+      urusanKode: "5.02",
+      urusanNama: "URUSAN PENUNJANG URUSAN PEMERINTAH KEUANGAN",
+      unitKode: "5-02.0.00.0.00.04",
+      unitNama: "BADAN PENGELOLA PAJAK DAN RETRIBUSI DAERAH",
+      subUnitKode: "5-02.0.00.0.00.04.01",
+      subUnitNama: "BADAN PENGELOLA PAJAK DAN RETRIBUSI DAERAH",
+      nominal: 525000,
+      progKode: "04",
+      progNama: "Program Pengelola Pendapatan Daerah",
+      kegKode: "2.01",
+      kegNama: "Kegiatan Pengelola Pendapatan Daerah",
+      subKegKode: "05",
+      subKegNama: "Pendataan dan Pendaftaran Objek Pajak Daerah",
+      rekening: "5.1.2.04.01.0003 Belanja Perjalanan Dinas Dalam Kota",
+      keperluan: "Pembayaran Biaya Perjalanan Dinas Dalam Kota An. Alamsyah/ Muhammad Fuad, S.Si/ Erik Anggriawan, S.Pd ke Kec. Pamenang Tanggal 08 Agustus 2025 SPPD Terlampir",
+      penerimaNama: "Erik Anggriawan, S.Pd",
+      penerimaAlamat: "Bangko",
+      infoPajak: "",
+      pptkNama: "SYORAYA, S.Pd",
+      pptkNip: "NIP. 19740124 199604 2 001",
+      bendaharaNama: "NURASIAH, A.Md",
+      bendaharaNip: "NIP. 19750505 199903 2 007",
+      lokasiTtd: "Bangko",
+      tahunTtd: "2026",
+      kadisJabatan: "Kepala Badan Pengelola Pajak dan Retribusi Daerah",
+      kadisNama: "HJ. SITI AMINAH, MM",
+      kadisNip: "NIP. 19690805 20012 2 002"
+    };
+
+    // Data Awal Rincian SPPD (Default 2 Orang Saja)
+    let dataSppd = {
+      noSppd: "094/000/ST/P3/BPPRD/2026",
+      tglSppd: "01 Juni 2026",
+      tujuanSppd: "Kecamatan Bangko",
+      lokasiTtd: "Bangko",
+      tahunTtd: "2026",
+      syncTtd: true,
+      kadisNama: "Hj. SITI AMINAH, MM",
+      kadisNip: "NIP. 19690805 20012 2 002",
+      bendaharaNama: "NURASIAH, A.Md",
+      bendaharaNip: "NIP. 19750505 199903 2 007",
+      // Objek BBM (Kondisional: Tidak tampil jika nilai <= 0)
+      bbm: {
+        nominal: 0,
+        uraian: "Biaya Bahan Bakar Minyak (BBM)",
+        penerima: ""
+      },
+      orang: [
+        {
+          nama: "MUHAMMAD FUAD, S.Si",
+          itemA: "Uang Harian",
+          nilaiA: 150000,
+          itemB: "-",
+          nilaiB: 0,
+          itemC: "-",
+          nilaiC: 0
+        },
+        {
+          nama: "ERIK ANGGIAWAN S.Pd",
+          itemA: "Uang Harian",
+          nilaiA: 150000,
+          itemB: "-",
+          nilaiB: 0,
+          itemC: "-",
+          nilaiC: 0
+        }
+      ]
+    };
+
+    let totalSppdBerjalan = 300000;
+
+    // FUNGSI CADANGAN LOGO BILA ADA KENDALA
+    function tanganiErrorLogo(imgEl) {
+      const step = imgEl.getAttribute('data-fallback-step') || '0';
+      if (step === '0') {
+        imgEl.setAttribute('data-fallback-step', '1');
+        imgEl.src = "https://drive.google.com/uc?export=view&id=" + GDRIVE_FILE_ID;
+      } else if (step === '1') {
+        imgEl.setAttribute('data-fallback-step', '2');
+        imgEl.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Lambang_Kabupaten_Merangin.png/250px-Lambang_Kabupaten_Merangin.png";
+      }
+    }
+
+    // FUNGSI KONVERSI ANGKA TERBILANG
+    function angkaTerbilang(nilai) {
+      const bilangan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+      let angka = Math.floor(Math.abs(nilai));
+      let hasil = "";
+
+      if (angka < 12) {
+        hasil = " " + bilangan[angka];
+      } else if (angka < 20) {
+        hasil = angkaTerbilang(angka - 10) + " Belas";
+      } else if (angka < 100) {
+        hasil = angkaTerbilang(Math.floor(angka / 10)) + " Puluh" + angkaTerbilang(angka % 10);
+      } else if (angka < 200) {
+        hasil = " Seratus" + angkaTerbilang(angka - 100);
+      } else if (angka < 1000) {
+        hasil = angkaTerbilang(Math.floor(angka / 100)) + " Ratus" + angkaTerbilang(angka % 100);
+      } else if (angka < 2000) {
+        hasil = " Seribu" + angkaTerbilang(angka - 1000);
+      } else if (angka < 1000000) {
+        hasil = angkaTerbilang(Math.floor(angka / 1000)) + " Ribu" + angkaTerbilang(angka % 1000);
+      } else if (angka < 1000000000) {
+        hasil = angkaTerbilang(Math.floor(angka / 1000000)) + " Juta" + angkaTerbilang(angka % 1000000);
+      } else if (angka < 1000000000000) {
+        hasil = angkaTerbilang(Math.floor(angka / 1000000000)) + " Milyar" + angkaTerbilang(angka % 1000000000);
+      }
+      return hasil.trim();
+    }
+
+    function formatRibuan(angka) {
+      if (!angka && angka !== 0) return '0';
+      return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function ubahKeDirectGdrive(url) {
+      if (!url) return DEFAULT_LOGO_URL;
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return "https://lh3.googleusercontent.com/d/" + match[1];
+      }
+      return url;
+    }
+
+    function aturSpasiManual(pxVal) {
+      const vNomor = document.getElementById('v_nomor');
+      const vTanggal = document.getElementById('v_tanggal');
+      const labelSpasi = document.getElementById('label_spasi');
+      if (vNomor) vNomor.style.setProperty('padding-left', pxVal + 'px', 'important');
+      if (vTanggal) vTanggal.style.setProperty('padding-left', pxVal + 'px', 'important');
+      if (labelSpasi) labelSpasi.innerText = pxVal + ' px';
+    }
+
+    // ================= PENGALIHAN DOKUMEN & CETAK =================
+    function gantiTampilanDokumen(mode) {
+      modeTampilanDokumen = mode;
+      const pageSppd = document.getElementById('pagePreviewSppd');
+      const pageKuitansi = document.getElementById('pagePreviewKuitansi');
+      const labelMode = document.getElementById('labelModePratinjau');
+
+      const btnSppd = document.getElementById('tabBtn_sppd');
+      const btnKuitansi = document.getElementById('tabBtn_kuitansi');
+      const btnKeduanya = document.getElementById('tabBtn_keduanya');
+
+      [btnSppd, btnKuitansi, btnKeduanya].forEach(b => {
+        b.className = 'px-3 py-1.5 rounded font-medium transition text-slate-300 hover:text-white';
+      });
+
+      if (mode === 'sppd') {
+        btnSppd.className = 'px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white shadow';
+        pageSppd.classList.remove('hidden');
+        pageSppd.classList.remove('page-break-print');
+        pageKuitansi.classList.add('hidden');
+        labelMode.innerText = 'Pratinjau: 1. Rincian Biaya SPPD';
+        gantiFormTab('formSppd');
+      } else if (mode === 'kuitansi') {
+        btnKuitansi.className = 'px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white shadow';
+        pageSppd.classList.add('hidden');
+        pageKuitansi.classList.remove('hidden');
+        pageKuitansi.classList.remove('page-break-print');
+        labelMode.innerText = 'Pratinjau: 2. Kuitansi Belanja';
+        gantiFormTab('formKuitansi');
+      } else {
+        btnKeduanya.className = 'px-3 py-1.5 rounded font-medium transition bg-blue-600 text-white shadow';
+        pageSppd.classList.remove('hidden');
+        pageSppd.classList.add('page-break-print');
+        pageKuitansi.classList.remove('hidden');
+        pageKuitansi.classList.remove('page-break-print');
+        labelMode.innerText = 'Pratinjau: Kedua Dokumen (Halaman 1: SPPD & Halaman 2: Kuitansi)';
+      }
+    }
+
+    function gantiFormTab(tabName) {
+      const fTabSppd = document.getElementById('fTabBtn_sppd');
+      const fTabKuitansi = document.getElementById('fTabBtn_kuitansi');
+      const wrapSppd = document.getElementById('wrapperFormSppd');
+      const wrapKuitansi = document.getElementById('wrapperFormKuitansi');
+
+      if (tabName === 'formSppd') {
+        fTabSppd.className = 'px-2.5 py-1 text-xs font-bold rounded bg-blue-600 text-white transition';
+        fTabKuitansi.className = 'px-2.5 py-1 text-xs font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition';
+        wrapSppd.classList.remove('hidden');
+        wrapKuitansi.classList.add('hidden');
+      } else {
+        fTabKuitansi.className = 'px-2.5 py-1 text-xs font-bold rounded bg-blue-600 text-white transition';
+        fTabSppd.className = 'px-2.5 py-1 text-xs font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition';
+        wrapKuitansi.classList.remove('hidden');
+        wrapSppd.classList.add('hidden');
+      }
+    }
+
+    // ================= LOGIKA RINCIAN BIAYA SPPD & BBM =================
+    function renderListOrangSppdForm() {
+      const container = document.getElementById('listOrangSppdContainer');
+      container.innerHTML = '';
+
+      dataSppd.orang.forEach((org, idx) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'p-2.5 border border-slate-200 bg-white rounded shadow-sm space-y-2';
+        itemDiv.innerHTML = `
+          <div class="flex justify-between items-center border-b pb-1.5">
+            <span class="font-bold text-slate-700 text-xs">Orang Ke-${idx + 1}</span>
+            ${dataSppd.orang.length > 1 ? `
+              <button type="button" onclick="hapusOrangSppd(${idx})" class="text-rose-600 hover:text-rose-800 text-[11px] font-semibold">
+                Hapus
+              </button>
+            ` : ''}
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">Nama & Gelar</label>
+            <input type="text" value="${org.nama}" oninput="updateOrangField(${idx}, 'nama', this.value)" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <div class="col-span-2">
+              <input type="text" value="${org.itemA}" oninput="updateOrangField(${idx}, 'itemA', this.value)" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="Komponen a">
+            </div>
+            <div>
+              <input type="number" value="${org.nilaiA}" oninput="updateOrangField(${idx}, 'nilaiA', Number(this.value))" class="w-full px-2 py-1 border border-slate-300 rounded text-xs text-right" placeholder="Rp">
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <div class="col-span-2">
+              <input type="text" value="${org.itemB}" oninput="updateOrangField(${idx}, 'itemB', this.value)" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="Komponen b">
+            </div>
+            <div>
+              <input type="number" value="${org.nilaiB}" oninput="updateOrangField(${idx}, 'nilaiB', Number(this.value))" class="w-full px-2 py-1 border border-slate-300 rounded text-xs text-right" placeholder="Rp">
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <div class="col-span-2">
+              <input type="text" value="${org.itemC}" oninput="updateOrangField(${idx}, 'itemC', this.value)" class="w-full px-2 py-1 border border-slate-300 rounded text-xs" placeholder="Komponen c">
+            </div>
+            <div>
+              <input type="number" value="${org.nilaiC}" oninput="updateOrangField(${idx}, 'nilaiC', Number(this.value))" class="w-full px-2 py-1 border border-slate-300 rounded text-xs text-right" placeholder="Rp">
+            </div>
+          </div>
+        `;
+        container.appendChild(itemDiv);
+      });
+
+      renderTabelSppdPratinjau();
+    }
+
+    function updateOrangField(index, field, value) {
+      if (dataSppd.orang[index]) {
+        dataSppd.orang[index][field] = value;
+        renderTabelSppdPratinjau();
+      }
+    }
+
+    function tambahOrangSppd() {
+      dataSppd.orang.push({
+        nama: "NAMA PEGAWAI, S.AP",
+        itemA: "Uang Harian",
+        nilaiA: 150000,
+        itemB: "-",
+        nilaiB: 0,
+        itemC: "-",
+        nilaiC: 0
+      });
+      renderListOrangSppdForm();
+    }
+
+    function hapusOrangSppd(idx) {
+      if (dataSppd.orang.length > 1) {
+        dataSppd.orang.splice(idx, 1);
+        renderListOrangSppdForm();
+      }
+    }
+
+    function renderTabelSppdPratinjau() {
+      const tbody = document.getElementById('vs_tableBody');
+      tbody.innerHTML = '';
+      let totalSemua = 0;
+      let counterNomor = 0;
+
+      // 1. Tampilkan Baris Setiap Pelaksana Perjalanan Dinas
+      dataSppd.orang.forEach((org, i) => {
+        counterNomor++;
+        const subTotal = (Number(org.nilaiA) || 0) + (Number(org.nilaiB) || 0) + (Number(org.nilaiC) || 0);
+        totalSemua += subTotal;
+
+        // Posisi tanda tangan: ganjil di kiri, genap agak ke kanan/tengah
+        const isGenap = counterNomor % 2 === 0;
+        const paddingTtd = isGenap ? 'padding-left: 55px;' : 'padding-left: 4px;';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align: center; font-size: 10pt; border-bottom: 1px solid #000;">${counterNomor}.</td>
+          <td style="border-bottom: 1px solid #000; padding: 4px 6px;">
+            <div style="font-weight: normal;">Biaya Perjalanan Dinas a.n ${org.nama}</div>
+            <div style="margin-top: 2px;">a. ${org.itemA}</div>
+            <div>b. ${org.itemB}</div>
+            <div>c. ${org.itemC}</div>
+            <div style="margin-top: 4px; border-top: 1px solid #000; padding-top: 2px; text-align: center; font-weight: normal;">
+              JUMLAH
+            </div>
+          </td>
+          <td style="border-bottom: 1px solid #000; padding: 4px 6px;">
+            <div style="height: 17px;"></div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Rp</span>
+              <span>${org.nilaiA > 0 ? formatRibuan(org.nilaiA) : '-'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Rp</span>
+              <span>${org.nilaiB > 0 ? formatRibuan(org.nilaiB) : '-'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Rp</span>
+              <span>${org.nilaiC > 0 ? formatRibuan(org.nilaiC) : '-'}</span>
+            </div>
+            <div style="margin-top: 4px; border-top: 1px solid #000; padding-top: 2px; display: flex; justify-content: space-between;">
+              <span>Rp</span>
+              <span>${formatRibuan(subTotal)}</span>
+            </div>
+          </td>
+          <td style="border-bottom: 1px solid #000; vertical-align: middle; padding: 8px 6px;">
+            <div style="${paddingTtd} display: flex; align-items: baseline;">
+              <span style="display: inline-block; width: 22px;">${counterNomor}.</span>
+              <span style="display: inline-block; width: 120px; border-bottom: 1px solid #000; height: 18px;"></span>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 2. Baris BBM: HANYA DITAMPILKAN JIKA NILAI NOMINAL DIISI DAN LEBIH DARI 0
+      const bbmNominal = Number(dataSppd.bbm.nominal) || 0;
+      if (bbmNominal > 0) {
+        counterNomor++;
+        totalSemua += bbmNominal;
+        const labelPenerimaBbm = dataSppd.bbm.penerima.trim() ? ` a.n ${dataSppd.bbm.penerima.trim()}` : '';
+
+        const trBbm = document.createElement('tr');
+        trBbm.innerHTML = `
+          <td style="text-align: center; font-size: 10pt; border-bottom: 1px solid #000; vertical-align: middle;">${counterNomor}.</td>
+          <td style="border-bottom: 1px solid #000; padding: 6px 6px; vertical-align: middle;">
+            <div style="font-weight: normal;">${dataSppd.bbm.uraian}${labelPenerimaBbm}</div>
+          </td>
+          <td style="border-bottom: 1px solid #000; padding: 6px 6px; vertical-align: middle;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Rp</span>
+              <span>${formatRibuan(bbmNominal)}</span>
+            </div>
+          </td>
+          <td style="border-bottom: 1px solid #000; vertical-align: middle;"></td>
+        `;
+        tbody.appendChild(trBbm);
+      }
+
+      totalSppdBerjalan = totalSemua;
+
+      // Update Total & Terbilang SPPD
+      document.getElementById('vs_totalBiaya').innerText = formatRibuan(totalSemua);
+      document.getElementById('vs_totalTerbilang').innerText = angkaTerbilang(totalSemua) + " Rupiah";
+
+      // Update Header Info SPPD
+      document.getElementById('vs_noSppd').innerText = document.getElementById('fs_noSppd').value;
+      document.getElementById('vs_tglSppd').innerText = document.getElementById('fs_tglSppd').value;
+      document.getElementById('vs_tujuanSppd').innerText = document.getElementById('fs_tujuanSppd').value;
+
+      // Update Penandatangan SPPD
+      document.getElementById('vs_lokasiTtd').innerText = document.getElementById('fs_lokasiTtd').value;
+      document.getElementById('vs_tahunTtd').innerText = document.getElementById('fs_tahunTtd').value;
+
+      if (document.getElementById('fs_syncTtd').checked) {
+        document.getElementById('vs_kadisNama').innerText = document.getElementById('f_kadisNama').value;
+        document.getElementById('vs_kadisNip').innerText = document.getElementById('f_kadisNip').value;
+        document.getElementById('vs_bendaharaNama').innerText = document.getElementById('f_bendaharaNama').value;
+        document.getElementById('vs_bendaharaNip').innerText = document.getElementById('f_bendaharaNip').value;
+      } else {
+        document.getElementById('vs_kadisNama').innerText = document.getElementById('fs_kadisNama').value;
+        document.getElementById('vs_kadisNip').innerText = document.getElementById('fs_kadisNip').value;
+        document.getElementById('vs_bendaharaNama').innerText = document.getElementById('fs_bendaharaNama').value;
+        document.getElementById('vs_bendaharaNip').innerText = document.getElementById('fs_bendaharaNip').value;
+      }
+    }
+
+    function toggleSyncTtd() {
+      const isSync = document.getElementById('fs_syncTtd').checked;
+      const box = document.getElementById('customTtdSppdBox');
+      if (isSync) {
+        box.classList.add('hidden');
+      } else {
+        box.classList.remove('hidden');
+      }
+      renderTabelSppdPratinjau();
+    }
+
+    // Fungsi salin total SPPD ke kuitansi belanja
+    function salinTotalKeKuitansi() {
+      const fNominal = document.getElementById('f_nominal');
+      fNominal.value = totalSppdBerjalan;
+      fNominal.dispatchEvent(new Event('input'));
+      alert('Total Rp ' + formatRibuan(totalSppdBerjalan) + ' berhasil diterapkan ke kuitansi belanja!');
+    }
+
+    // ================= SINKRONISASI KUITANSI =================
+    const fieldsKuitansi = [
+      'nomor', 'tanggal', 'urusanKode', 'urusanNama', 'unitKode', 'unitNama',
+      'subUnitKode', 'subUnitNama', 'progKode', 'progNama', 'kegKode', 'kegNama',
+      'subKegKode', 'subKegNama', 'rekening', 'keperluan', 'penerimaNama',
+      'penerimaAlamat', 'infoPajak', 'pptkNama', 'pptkNip', 'bendaharaNama',
+      'bendaharaNip', 'lokasiTtd', 'tahunTtd', 'kadisJabatan', 'kadisNama', 'kadisNip'
+    ];
+
+    function pasangSyncKuitansi() {
+      fieldsKuitansi.forEach(f => {
+        const input = document.getElementById('f_' + f);
+        const view = document.getElementById('v_' + f);
+        if (input && view) {
+          input.addEventListener('input', () => {
+            view.innerText = input.value;
+            // Jika sync TTD aktif, update juga di SPPD
+            if (f.startsWith('kadis') || f.startsWith('bendahara')) {
+              renderTabelSppdPratinjau();
+            }
+          });
+        }
+      });
+
+      const fLogo = document.getElementById('f_logoUrl');
+      const vLogo = document.getElementById('v_logoImg');
+      if (fLogo && vLogo) {
+        fLogo.addEventListener('input', () => {
+          vLogo.removeAttribute('data-fallback-step');
+          vLogo.src = ubahKeDirectGdrive(fLogo.value.trim());
+        });
+      }
+
+      const fSpasi = document.getElementById('f_spasiManual');
+      if (fSpasi) {
+        fSpasi.addEventListener('input', (e) => {
+          aturSpasiManual(e.target.value);
+        });
+      }
+
+      const fNominal = document.getElementById('f_nominal');
+      const fTerbilang = document.getElementById('f_terbilang');
+      const vNominal = document.getElementById('v_nominal');
+      const vTerbilang = document.getElementById('v_terbilang');
+
+      fNominal.addEventListener('input', () => {
+        const val = parseInt(fNominal.value, 10);
+        if (!isNaN(val) && val >= 0) {
+          vNominal.innerText = formatRibuan(val);
+          const hasilTerbilang = angkaTerbilang(val) + " Rupiah";
+          fTerbilang.value = hasilTerbilang;
+          vTerbilang.innerText = hasilTerbilang;
+        } else {
+          vNominal.innerText = "0";
+          fTerbilang.value = "";
+          vTerbilang.innerText = "-";
+        }
+      });
+
+      fTerbilang.addEventListener('input', () => {
+        vTerbilang.innerText = fTerbilang.value;
+      });
+
+      // Listener Input SPPD
+      ['fs_noSppd', 'fs_tglSppd', 'fs_tujuanSppd', 'fs_lokasiTtd', 'fs_tahunTtd', 'fs_kadisNama', 'fs_kadisNip', 'fs_bendaharaNama', 'fs_bendaharaNip'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', renderTabelSppdPratinjau);
+        }
+      });
+
+      // Listener Khusus Kolom BBM
+      const fBbmNominal = document.getElementById('fs_bbmNominal');
+      const fBbmUraian = document.getElementById('fs_bbmUraian');
+      const fBbmPenerima = document.getElementById('fs_bbmPenerima');
+
+      if (fBbmNominal) {
+        fBbmNominal.addEventListener('input', (e) => {
+          dataSppd.bbm.nominal = Number(e.target.value) || 0;
+          renderTabelSppdPratinjau();
+        });
+      }
+      if (fBbmUraian) {
+        fBbmUraian.addEventListener('input', (e) => {
+          dataSppd.bbm.uraian = e.target.value || "Biaya Bahan Bakar Minyak (BBM)";
+          renderTabelSppdPratinjau();
+        });
+      }
+      if (fBbmPenerima) {
+        fBbmPenerima.addEventListener('input', (e) => {
+          dataSppd.bbm.penerima = e.target.value;
+          renderTabelSppdPratinjau();
+        });
+      }
+    }
+
+    function muatDataDefaultSemua() {
+      // Muat Kuitansi
+      fieldsKuitansi.forEach(f => {
+        const input = document.getElementById('f_' + f);
+        const view = document.getElementById('v_' + f);
+        if (input && view) {
+          input.value = defaultKuitansi[f] || "";
+          view.innerText = defaultKuitansi[f] || "";
+        }
+      });
+
+      const fLogo = document.getElementById('f_logoUrl');
+      const vLogo = document.getElementById('v_logoImg');
+      if (fLogo && vLogo) {
+        fLogo.value = defaultKuitansi.logoUrl;
+        vLogo.removeAttribute('data-fallback-step');
+        vLogo.src = defaultKuitansi.logoUrl;
+      }
+
+      const fSpasi = document.getElementById('f_spasiManual');
+      if (fSpasi) {
+        fSpasi.value = defaultKuitansi.spasiManual;
+        aturSpasiManual(defaultKuitansi.spasiManual);
+      }
+
+      const fNominal = document.getElementById('f_nominal');
+      const fTerbilang = document.getElementById('f_terbilang');
+      const vNominal = document.getElementById('v_nominal');
+      const vTerbilang = document.getElementById('v_terbilang');
+
+      fNominal.value = defaultKuitansi.nominal;
+      vNominal.innerText = formatRibuan(defaultKuitansi.nominal);
+      const textTerbilang = angkaTerbilang(defaultKuitansi.nominal) + " Rupiah";
+      fTerbilang.value = textTerbilang;
+      vTerbilang.innerText = textTerbilang;
+
+      // Muat SPPD (Default 2 Orang)
+      document.getElementById('fs_noSppd').value = dataSppd.noSppd;
+      document.getElementById('fs_tglSppd').value = dataSppd.tglSppd;
+      document.getElementById('fs_tujuanSppd').value = dataSppd.tujuanSppd;
+      document.getElementById('fs_lokasiTtd').value = dataSppd.lokasiTtd;
+      document.getElementById('fs_tahunTtd').value = dataSppd.tahunTtd;
+
+      document.getElementById('fs_kadisNama').value = dataSppd.kadisNama;
+      document.getElementById('fs_kadisNip').value = dataSppd.kadisNip;
+      document.getElementById('fs_bendaharaNama').value = dataSppd.bendaharaNama;
+      document.getElementById('fs_bendaharaNip').value = dataSppd.bendaharaNip;
+
+      // Muat Kolom BBM (Default Kosong / 0 sehingga tidak tampil saat awal)
+      document.getElementById('fs_bbmNominal').value = '';
+      document.getElementById('fs_bbmUraian').value = dataSppd.bbm.uraian;
+      document.getElementById('fs_bbmPenerima').value = '';
+      dataSppd.bbm.nominal = 0;
+
+      renderListOrangSppdForm();
+      // Buka Tab 1 (Rincian Biaya SPPD) secara default
+      gantiTampilanDokumen('sppd');
+    }
+
+    // Inisialisasi awal
+    window.addEventListener('DOMContentLoaded', () => {
+      pasangSyncKuitansi();
+      muatDataDefaultSemua();
+    });
+  </script>
+</body>
+</html>
