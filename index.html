@@ -296,20 +296,23 @@
               </div>
             </div>
 
-            <!-- Footer Statis (Bukan Kolom Inputan - Tidak Tercetak di PDF) -->
-            
+            <!-- Footer Statis (Tidak Tercetak di PDF) -->
+            <div class="pt-2.5 border-t border-slate-200/80 mt-2 flex justify-between items-center text-[11px] text-slate-500">
+              <span>Dibuat oleh : <strong class="text-slate-800 font-semibold">MUHAMMAD FUAD</strong></span>
+              <span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Khusus internal</span>
+            </div>
           </div>
         </div>
 
         <!-- ================= FORM 2: KUITANSI BELANJA ================= -->
         <div id="wrapperFormKuitansi" class="space-y-4 hidden">
-          <!-- 1. Nomor, Tanggal & Logo -->
+          <!-- 1. Nomor, Tanggal & Identitas Dokumen (Input Logo Disembunyikan) -->
           <div class="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200/60">
-            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">1. Identitas & Logo Dokumen</span>
-            <div>
-              <label class="block font-medium text-slate-600 mb-1">Tautan Logo (Google Drive / Direct URL)</label>
-              <input type="text" id="f_logoUrl" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="https://...">
-            </div>
+            <span class="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">1. Identitas Dokumen</span>
+            
+            <!-- Input URL logo disembunyikan agar terkunci permanen -->
+            <input type="hidden" id="f_logoUrl" value="https://lh3.googleusercontent.com/d/1_7FZisvkbSmNCadKTjaRVrFQpgPoIgNF">
+
             <div>
               <label class="block font-medium text-slate-600 mb-1">Nomor Bukti</label>
               <input type="text" id="f_nomor" class="w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -467,7 +470,11 @@
               <input type="text" id="f_kadisNip" placeholder="NIP Kepala" class="w-full px-2 py-1 border border-slate-300 rounded text-xs">
             </div>
 
-            
+            <!-- Footer Statis (Tidak Tercetak di PDF) -->
+            <div class="pt-2.5 border-t border-slate-200/80 mt-2 flex justify-between items-center text-[11px] text-slate-500">
+              <span>Dibuat oleh : <strong class="text-slate-800 font-semibold">MUHAMMAD FUAD</strong></span>
+              <span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Khusus internal</span>
+            </div>
           </div>
         </div>
 
@@ -476,7 +483,7 @@
       <!-- Footer Panel Form (Statis / Tidak Tercetak ke PDF) -->
       <div class="no-print p-2.5 bg-slate-50 border-t border-slate-200 text-center text-xs text-slate-500 flex justify-between items-center px-4">
         <span>Dibuat oleh : <strong class="text-slate-700 font-semibold">MUHAMMAD FUAD</strong></span>
-        
+        <span class="text-[10px] text-slate-400 italic">Dokumen Cetak Bersih (100% Bebas Footer)</span>
       </div>
     </section>
 
@@ -487,7 +494,7 @@
           <span id="labelModePratinjau">Pratinjau: 1. Rincian Biaya SPPD</span>
         </span>
         <div class="flex items-center gap-2 text-xs text-slate-600">
-                   <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           Format Pas Standar SPJ
         </div>
       </div>
@@ -800,7 +807,7 @@
   </footer>
 
   <script>
-    // File ID Google Drive dari tautan pengguna
+    // File ID Google Drive Resmi Lambang Kabupaten Merangin
     const GDRIVE_FILE_ID = "1_7FZisvkbSmNCadKTjaRVrFQpgPoIgNF";
     const DEFAULT_LOGO_URL = "https://lh3.googleusercontent.com/d/" + GDRIVE_FILE_ID;
 
@@ -927,15 +934,6 @@
     function formatRibuan(angka) {
       if (!angka && angka !== 0) return '0';
       return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
-
-    function ubahKeDirectGdrive(url) {
-      if (!url) return DEFAULT_LOGO_URL;
-      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return "https://lh3.googleusercontent.com/d/" + match[1];
-      }
-      return url;
     }
 
     function aturSpasiManual(pxVal) {
@@ -1236,15 +1234,6 @@
         }
       });
 
-      const fLogo = document.getElementById('f_logoUrl');
-      const vLogo = document.getElementById('v_logoImg');
-      if (fLogo && vLogo) {
-        fLogo.addEventListener('input', () => {
-          vLogo.removeAttribute('data-fallback-step');
-          vLogo.src = ubahKeDirectGdrive(fLogo.value.trim());
-        });
-      }
-
       const fSpasi = document.getElementById('f_spasiManual');
       if (fSpasi) {
         fSpasi.addEventListener('input', (e) => {
@@ -1318,14 +1307,6 @@
           view.innerText = defaultKuitansi[f] || "";
         }
       });
-
-      const fLogo = document.getElementById('f_logoUrl');
-      const vLogo = document.getElementById('v_logoImg');
-      if (fLogo && vLogo) {
-        fLogo.value = defaultKuitansi.logoUrl;
-        vLogo.removeAttribute('data-fallback-step');
-        vLogo.src = defaultKuitansi.logoUrl;
-      }
 
       const fSpasi = document.getElementById('f_spasiManual');
       if (fSpasi) {
